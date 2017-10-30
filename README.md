@@ -8,67 +8,52 @@
 
 Using feature flags has following benefits:
 
-a) Using feature flags, changes can be released in the production environment. This enables the development team to test their code in the actual environment, without rest of the users knowing the existence of the feature
-a) It eliminates the cost of maintaining and supporting branches which have a very long lifespan.
+a) Using feature flags, changes can be released in the production environment. This enables the development team to test their code in the actual environment, without rest of the users knowing the existence of the feature.
 
-b) It eliminates merge problems.
+b) The features can be deployed in incremental stages. Thus, if there was any issue with a stage, it can be rolled back easily or the feature flag can be turned off.
 
-c) It reduces deployment risk through incremental release strategies. It enables a user to release a new feature to certain users and check/test it before releasing it to the rest of the user base. The new code can be turned off if any problems are faced. All of this enables faster release of new code for testing and feedback.
+c) It eliminates the cost of maintaining and supporting multiple branches, and eventually eliminates merge problems.
 
-Some disadvantages of using Feature Flags are as follows:
+Some disadvantages of feature flags are:
 
-a) The longer Feature Flags are left in the code, the more they end up costing. The more the number of options added, the harder it gets to test the application and the expenses shoot up.
+a) By its very definition, features are code that is not completely tested. If feature flags are not properly implemented, there could be accidental exposure to this untested code, leading to a lot of complications.
 
-b) Tracking the Feature Flags through their respective states of production and test can make it harder to understand and duplicate problems.
+b) When multiple features are deployed that are maintained by different feature flags, keeping a track of all combination of flags is not easy. If there is some issue, then tracking the source of issue can be a challenge.
 
-c) If not implemented properly, releasing code that is not completely implemented poses serious problems. Accidental exposure of this code can lead to unpredictable results at run-time.
+c) When feature flags are left in the code for a long time, it becomes very difficult to remove them and they end up costing more.
 
-### 2. What are some reasons for keeping servers in seperate availability zones?
+### 2. What are some reasons for keeping servers in separate availability zones?
 
-Some reasons for keeping servers in separate availability zones are as follows:
+a) Having multiple servers in different availability zones will provide protection from natural calamities or power outages in specific regions. Thus, the application need not go down due to failure in a specific region.
 
-a) It provides redundancy in case of outage or failure. If the INTERNET is down in a particular zone or there is a power outage in a particular zone, having a redundant server in a separate availability zone ensures that the system is available for users.
+b) Such a setup can help with slow traffic due to high volume in specific regions, where some traffic can be redirected to servers in regions with low traffic.
 
-b) When a new version is being released/deployed, having isolated production zones enables us to switch requests between the separate availability zones. Volume of such requests during a new release can be very high and isolated production zones enables us to switch requests between the two.
-
-c) If the environment at one of the zones is polluted say due to a corrupt cache, we have a different zone available where the production environment is healthy. This provides resiliency.
-
-d) It also helps to avoid slow spin up during peak hours such as lunch hours when traffic boost can be huge.
+c) Contents can be provided to users much faster when the server is located closer to them. Different contents can be served to different users depending on their geography using this setup.
 
 ### 3. Describe the Circuit Breaker pattern and its relation to operation toggles.
 
-Usually software systems make remote calls to processes running on different machines across a network. Remote calls can fail or wait for a response till timeout is reached. When the system is experiencing peak load, such unresponsive calls from multiple calls can lead to simultaneous failures across the system leading to depletion of critical resources.
+a) Software systems usually makes remote calls to applications or procedures running on remote processes. The problem with these calls is that they can fail or hang till a timeout has reached.
 
-A circuit breaker pattern prevents this problem by wrapping such calls in a circuit breaker object. The circuit breaker object monitors for failures and when the failures exceed a certain threshold, all subsequent calls are returned with an error without the actual call being made. The underlying calls can be checked for success and if they succeed, the circuit breaker is reset and resumes it’s normal operation.
+b) This problem exacerbates during peak hour, when multiple in system processes are trying to call these remote processes and most of the calls fail. This introduces a lot of performance issues.
 
-Ops Toggles are used to control the operational aspects of a system’s behavior. When a feature has unclear performance implications, operators need the ability to disable or degrade sch features immediately in production. Ops Toggles provide this ability and are used when such features are rolled out.
+c) One way to address this issue is by a using circuit breaker pattern. In this pattern, we wrap the remote calls in a circuit breaker object. This object will monitor for failures when making remote calls. If the number of failures reach a certain threshold, the circuit breaker object will block the calls and return an error to the sender. We can also program such breakers for auto-recovery, where after some time the breaker will check if the remote call is working and then unblock these calls.
 
-Ops Toggles are usually have a short lifespan but it is not uncommon for a system to have a few number of Ops Toggles or Kill Switches which provide operators the ability to disable non-vital system functionalities immediately during peak load. These non-vital functionalities can consume a lot of resources and may need to be shut down during peak load. Such Ops Toggles can be related to manually managed Circuit Breakers.
+d) Ops toggle essentially employ circuit breaker pattern to manage features in a production environment. 
+
+e) If there is some issue with a feature that is affecting other areas, like performance issues due to high load, non-responsiveness, etc. or it is deemed that a feature is no longer necessary, the ops toggle can be used to kill such features without affecting other areas of application.
+
+f) Ops toggle are usually triggered manually as opposed to circuit breakers for RPCs.
+
 ### 4. What are some ways you can help speed up an application that has:
 
 ### a) traffic that peaks on Monday evenings
 
+Having multiple servers in different availability zones can help redirect traffic to servers that have less load. We can use load balancing for this, where the load balancer will redirect traffic to other servers or start new instances to serve this traffic.
+
 ### b) real time and concurrent connections with peers
+
+The problem with real time and concurrent connections is the introduction of latency. Using latency based routing and smart DNS servers, we can resolve the requests so that only servers that have low latency with respect to the requester will server these requests. Amazon uses goelocation routing, where a server is chosen that is geographically closer after resolving the DNS. 
 
 ### c) heavy upload traffic
 
-
-Some ways we can speed up an application that has
-
-a) traffic that peaks on Monday evenings
-
-b) real time and concurrent connections with peers
-
-c) heavy upload traffic
-
-are as follows:
-
-i) Smart DNS Services and routing can help speed up an application that has real time connections. Latency is an issue with real time connections and if the latency goes beyond a desired value, undesirable packet loss occurs and the transmitted packets are rendered useless. Latency based routing can be done for sensitive applications such as those with real time connections. Geo based routing/DNS can be done for peers in geographically different areas.
-
-ii) Load balancing can help speed up applications that has traffic that peaks on specific hours/days and also applications with heavy upload traffic. Not only can a load balancer route requests to different available servers but it can also request a new auto-scaling instance if required. All the instances are monitored and only the healthy instances receive requests.
-
-iii) Having isolated production environments or Availability zones can speed up applications or ensure the system is available for sensitive applications such as real time connections.
-
-iv) Geographically placed production environments can help speed up applications in peak hours. Requests are served by servers that are geographically closest to the place from which the request originated.
-
-v) Having a Reverse Proxy Server helps speed up applications because the main application server does not connect to the Internet anymore and can focus on delivering content to the Reverse Proxy Server at high speeds. The main application server does not need to interact with clients and wait for their responses before moving on to the next process.
+We can use reverse proxy servers like nginx to interact with the internet traffic at high speeds. This frees the application server from serving the traffic directly and can continue with main application. Using reverse proxy we can employ load balancing, so that if traffic is high, more instances can be spawned to meet the demands. We can use also cache servers to meet these demands.
