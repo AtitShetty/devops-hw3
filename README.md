@@ -1,6 +1,10 @@
 # HW3
 
-## [Screencast]()
+## Assumptions
+
+Catfacts are zero indexed
+
+## [Screencast](https://youtu.be/xbPN3hmRt_o)
 
 ## Conceptual Questions
 
